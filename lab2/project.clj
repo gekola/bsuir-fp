@@ -2,7 +2,8 @@
   :description "Multithreaded recursive crowler bot."
   :dependencies [[org.clojure/clojure "1.6.0"],
                  [http-kit "2.1.16"]
-                 [com.climate/claypoole "0.3.3"]]
+                 [com.climate/claypoole "0.3.3"]
+                 [clojurewerkz/urly "1.0.0"]]
   :main ^:skip-aot lab2.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
