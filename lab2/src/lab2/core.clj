@@ -13,10 +13,12 @@
   (first (string/split url #"#")))
 
 (defn complete-link [base url]
-  (if url
-    (if (absolute? url)
-      url
-      (if base (resolve base url)))))
+  (try
+    (if url
+      (if (absolute? url)
+        url
+        (if base (resolve base url))))
+    (catch java.net.URISyntaxException _ nil)))
 
 (defn find-links [body url]
   (distinct
@@ -46,15 +48,16 @@
       [[url 0 "redir" nil] []])))
 
 (defn url-to-node-with-urls [url skip-children]
-  (let [resp @(http/get url {:follow-redirects false})]
+  (let [resp @(http/get url {:follow-redirects false, :timeout 3000})]
     (node-for url resp skip-children)))
 
 (defn handle-req [[par-url _ _ par-children] url depth]
   (if par-children
     (let [[child-node urls] (url-to-node-with-urls url (<= depth 0))]
       (send par-children (partial cons child-node))
-      (cp/pfor pool [url urls]
-               (handle-req child-node url (- depth 1))))))
+      (if (< 0 depth)
+        (cp/pfor pool [url urls]
+          (handle-req child-node url (dec depth)))))))
 
 (defn print-node [[par-url par-cnt par-str par-children] prefix]
   (let [ready-children (promise)]
@@ -64,10 +67,9 @@
         (add-watch par-children
                    :key
                    (fn [_ _ _ children]
-                     (println [(count children) "of" par-cnt])
+                     ; (println [(count children) "of" par-cnt])
                      (if (= par-cnt (count children))
-                       (deliver ready-children children))
-                     true))
+                       (deliver ready-children children))))
         (let [children (deref par-children)]
           (if (= par-cnt (count children))
             (deliver ready-children children))))
@@ -83,7 +85,7 @@
                       (fn [url]
                         (let [[node urls] (url-to-node-with-urls url (<= depth 0))]
                           (cp/pfor pool [url urls]
-                                   (handle-req node url (- depth 1)))
+                                   (handle-req node url (dec depth)))
                           node))
                       urls)]
       (doseq [node nodes]

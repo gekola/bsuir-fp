@@ -8,7 +8,6 @@ Simple threadpool-backed crowler.
 
 ## Some possible improvements
 
- + handle relative urls
  + make "http://example.com" and "http://example.com/" indistinguishable
  + agents => lazy seqs
  + add subtree caching (requires cache deepening feature when shorter subtree is
